@@ -1,15 +1,15 @@
 <?php
 
 $routes = [
-    '/' => [
+    '/acceuil' => [
         'controller' => 'note.Controller',
         'action' => 'acceuil'
     ],
-    'login' => [
+    '/' => [
         'controller' => 'auth.Controller',
         'action' => 'connexion'
     ],
-    'logout' => [
+    '/logout' => [
         'controller' => 'auth.Controller',
         'action' => 'deconnexion'
     ],
