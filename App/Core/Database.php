@@ -1,61 +1,96 @@
 <?php
 
+class Database
+{
+    public function connexionDB(): PDO
+    {
+        static $pdo = null;
 
-function connexionDB(): PDO {
-    static $pdo = null;
+        if ($pdo === null) {
+            try {
+                $pdo = new PDO(
+                    "pgsql:host=localhost;port=5432;dbname=gestion_notes",
+                    "postgres",
+                    "12345"
+                );
 
-    if ($pdo === null) {
-        try {
-            $pdo = new PDO("pgsql:host=localhost; port=5432; dbname=gestion_notes", "postgres", "12345");
-            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (Exception $ex) {
-            die('Erreur:' . $ex->getMessage());
+                $pdo->setAttribute(
+                    PDO::ATTR_DEFAULT_FETCH_MODE,
+                    PDO::FETCH_ASSOC
+                );
+
+                $pdo->setAttribute(
+                    PDO::ATTR_ERRMODE,
+                    PDO::ERRMODE_EXCEPTION
+                );
+
+            } catch (Exception $ex) {
+                die("Erreur : " . $ex->getMessage());
+            }
         }
+
+        return $pdo;
     }
-    return $pdo;
-}
-
-function deconnecteDB(?PDO &$pdo = null): void {
-    $pdo = null;
-}
 
 
+    public function deconnecteDB(): void
+    {
+        $pdo = null;
+    }
 
-function query(PDO $pdo, string $sql, bool $single = true): array
-{
-    $query = $pdo->query($sql);
-    return $single ? $query->fetch() : $query->fetchAll();
+
+    public function query(string $sql, bool $single = true): array
+    {
+        $pdo = $this->connexionDB();
+
+        $query = $pdo->query($sql);
+
+        return $single
+            ? $query->fetch()
+            : $query->fetchAll();
+    }
 
 
-}
+    public function prepare(string $sql, array $datas = []): PDOStatement
+    {
+        $pdo = $this->connexionDB();
 
-function prepare(PDO $pdo, string $sql, array $datas)
-{
-    $prepare = $pdo->prepare($sql);
-    $prepare->execute($datas);
-    return $prepare;
-}
+        $prepare = $pdo->prepare($sql);
+        $prepare->execute($datas);
 
-function executeQuery(PDO $pdo, string $sql, array $datas, bool $single = true): array
-{
-    $statement = prepare($pdo, $sql, $datas);
+        return $prepare;
+    }
 
-    return $single ? $statement->fetch() : $statement->fetchAll();
-}
 
-function executeUpdate(PDO $pdo, string $sql, array $datas): int
-{
-    prepare($pdo, $sql, $datas);
+    public function executeQuery(
+        string $sql,
+        array $datas,
+        bool $single = true
+    ): array {
 
-    return (str_starts_with(strtoupper($sql), 'INSERT')) ? $pdo->lastInsertId() : $prepare->rowCount();
-}
+        $statement = $this->prepare($sql, $datas);
 
-function getAllTables(string $tableName){
-     $pdo = connexionDB();
-    $sql = "
-        SELECT * FROM $tableName";
-    $query = query($pdo, $sql, false);
-    $pdo = null;
-    return $query;
+        return $single
+            ? $statement->fetch()
+            : $statement->fetchAll();
+    }
+
+
+    public function executeUpdate(
+        string $sql,
+        array $datas
+    ): int {
+
+        $statement = $this->prepare($sql, $datas);
+
+        return $statement->rowCount();
+    }
+
+
+    public function getAllTables(string $tableName): array
+    {
+        $sql = "SELECT * FROM $tableName";
+
+        return $this->query($sql, false);
+    }
 }
